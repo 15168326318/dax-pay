@@ -2,12 +2,12 @@ package cn.daxpay.single.sdk.param.allocation;
 
 import cn.daxpay.single.sdk.code.AllocReceiverTypeEnum;
 import cn.daxpay.single.sdk.code.AllocRelationTypeEnum;
-import cn.daxpay.single.sdk.code.PayChannelEnum;
-import cn.daxpay.single.sdk.model.allocation.AllocReceiverAddModel;
+import cn.daxpay.single.sdk.code.ChannelEnum;
 import cn.daxpay.single.sdk.net.DaxPayRequest;
 import cn.daxpay.single.sdk.response.DaxPayResult;
+import cn.daxpay.single.sdk.model.allocation.AllocReceiverAddModel;
+import cn.daxpay.single.sdk.util.JsonUtil;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -27,7 +27,7 @@ public class AllocReceiverAddParam extends DaxPayRequest<AllocReceiverAddModel> 
 
     /**
      * 所属通道
-     * @see PayChannelEnum
+     * @see ChannelEnum
      */
     private String channel;
 
@@ -57,7 +57,7 @@ public class AllocReceiverAddParam extends DaxPayRequest<AllocReceiverAddModel> 
      */
     @Override
     public String path() {
-        return "/unipay/allocation/receiver/add";
+        return "/unipay/alloc/receiver/add";
     }
 
     /**
@@ -65,6 +65,6 @@ public class AllocReceiverAddParam extends DaxPayRequest<AllocReceiverAddModel> 
      */
     @Override
     public DaxPayResult<AllocReceiverAddModel> toModel(String json) {
-        return JSONUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiverAddModel>>() {}, false);
+        return JsonUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiverAddModel>>() {});
     }
 }

@@ -1,43 +1,44 @@
 package cn.daxpay.single.sdk.param.allocation;
 
-import cn.daxpay.single.sdk.code.PayChannelEnum;
-import cn.daxpay.single.sdk.model.allocation.AllocReceiversModel;
+import cn.daxpay.single.sdk.model.allocation.AllocReceiverModel;
 import cn.daxpay.single.sdk.net.DaxPayRequest;
 import cn.daxpay.single.sdk.response.DaxPayResult;
+import cn.daxpay.single.sdk.util.JsonUtil;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.json.JSONUtil;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
- * 查询分账接收者参数
+ * 分账接收方列表参数
  * @author xxm
- * @since 2024/5/20
+ * @since 2024/5/21
  */
-@EqualsAndHashCode(callSuper = true)
-@Data
-@Accessors(chain = true)
-public class QueryAllocReceiverParam extends DaxPayRequest<AllocReceiversModel> {
+@Getter
+@Setter
+public class QueryAllocReceiverParam extends DaxPayRequest<AllocReceiverModel> {
 
-    /**
-     * 所属通道
-     * @see PayChannelEnum
-     */
+    /** 分账通道 */
     private String channel;
 
-    /** 分账接收方编号 */
-    private String receiverNo;
 
-
-
+    /**
+     * 方法请求路径
+     *
+     * @return 请求路径
+     */
     @Override
     public String path() {
-        return "/unipay/query/allocationReceiver";
+        return "/unipay/alloc/receiver/list";
     }
 
+    /**
+     * 将请求返回结果反序列化为实体类
+     *
+     * @param json json字符串
+     * @return 反序列后的对象
+     */
     @Override
-    public DaxPayResult<AllocReceiversModel> toModel(String json) {
-        return JSONUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiversModel>>() {}, false);
+    public DaxPayResult<AllocReceiverModel> toModel(String json) {
+        return JsonUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiverModel>>() {});
     }
 }

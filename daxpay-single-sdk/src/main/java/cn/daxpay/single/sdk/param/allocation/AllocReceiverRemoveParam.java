@@ -1,10 +1,10 @@
 package cn.daxpay.single.sdk.param.allocation;
 
-import cn.daxpay.single.sdk.model.allocation.AllocReceiverRemoveModel;
 import cn.daxpay.single.sdk.net.DaxPayRequest;
 import cn.daxpay.single.sdk.response.DaxPayResult;
+import cn.daxpay.single.sdk.model.allocation.AllocReceiverRemoveModel;
+import cn.daxpay.single.sdk.util.JsonUtil;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -27,7 +27,7 @@ public class AllocReceiverRemoveParam extends DaxPayRequest<AllocReceiverRemoveM
      */
     @Override
     public String path() {
-        return "/unipay/allocation/receiver/remove";
+        return "/unipay/alloc/receiver/remove";
     }
 
     /**
@@ -35,6 +35,6 @@ public class AllocReceiverRemoveParam extends DaxPayRequest<AllocReceiverRemoveM
      */
     @Override
     public DaxPayResult<AllocReceiverRemoveModel> toModel(String json) {
-        return JSONUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiverRemoveModel>>() {}, false);
+        return JsonUtil.toBean(json, new TypeReference<DaxPayResult<AllocReceiverRemoveModel>>() {});
     }
 }

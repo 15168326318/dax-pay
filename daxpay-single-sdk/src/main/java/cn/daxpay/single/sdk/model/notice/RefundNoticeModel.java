@@ -1,21 +1,18 @@
 package cn.daxpay.single.sdk.model.notice;
 
-import cn.daxpay.single.sdk.code.PayChannelEnum;
+import cn.daxpay.single.sdk.code.ChannelEnum;
 import cn.daxpay.single.sdk.code.RefundStatusEnum;
-import cn.daxpay.single.sdk.net.DaxPayResponseModel;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
+
+import java.math.BigDecimal;
 
 /**
  * 退款通知消息
  * @author xxm
  * @since 2024/2/22
  */
-@Getter
-@Setter
-@ToString(callSuper = true)
-public class RefundNoticeModel extends DaxPayResponseModel {
+@Data
+public class RefundNoticeModel{
 
     /** 支付订单号 */
     private String orderNo;
@@ -40,7 +37,7 @@ public class RefundNoticeModel extends DaxPayResponseModel {
 
     /**
      * 退款通道
-     * @see PayChannelEnum
+     * @see ChannelEnum
      */
     private String channel;
 
@@ -48,7 +45,7 @@ public class RefundNoticeModel extends DaxPayResponseModel {
     private Integer orderAmount;
 
     /** 退款金额 */
-    private Integer amount;
+    private BigDecimal amount;
 
     /** 退款原因 */
     private String reason;

@@ -1,23 +1,20 @@
 package cn.daxpay.single.sdk.model.notice;
 
-import cn.daxpay.single.sdk.code.PayChannelEnum;
-import cn.daxpay.single.sdk.code.PayOrderAllocStatusEnum;
-import cn.daxpay.single.sdk.code.PayOrderRefundStatusEnum;
+import cn.daxpay.single.sdk.code.ChannelEnum;
+import cn.daxpay.single.sdk.code.PayAllocStatusEnum;
+import cn.daxpay.single.sdk.code.PayRefundStatusEnum;
 import cn.daxpay.single.sdk.code.PayStatusEnum;
-import cn.daxpay.single.sdk.net.DaxPayResponseModel;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
+
+import java.math.BigDecimal;
 
 /**
  * 支付异步通知类
  * @author xxm
  * @since 2024/1/7
  */
-@Getter
-@Setter
-@ToString(callSuper = true)
-public class PayNoticeModel extends DaxPayResponseModel {
+@Data
+public class PayNoticeModel{
 
     /** 订单号 */
     private String orderNo;
@@ -41,7 +38,7 @@ public class PayNoticeModel extends DaxPayResponseModel {
     private Boolean autoAllocation;
     /**
      * 支付通道
-     * @see PayChannelEnum
+     * @see ChannelEnum
      */
     private String channel;
 
@@ -49,7 +46,7 @@ public class PayNoticeModel extends DaxPayResponseModel {
     private String method;
 
     /** 支付金额 */
-    private Integer amount;
+    private BigDecimal amount;
 
     /**
      * 支付状态
@@ -60,27 +57,27 @@ public class PayNoticeModel extends DaxPayResponseModel {
 
     /**
      * 退款状态
-     * @see PayOrderRefundStatusEnum
+     * @see PayRefundStatusEnum
      */
     private String refundStatus;
 
     /**
      * 分账状态
-     * @see PayOrderAllocStatusEnum
+     * @see PayAllocStatusEnum
      */
     private String allocStatus;
 
     /** 支付成功时间 */
-    private Long payTime;
+    private String payTime;
 
     /** 过期时间 */
-    private Long expiredTime;
+    private String expiredTime;
 
     /** 支付关闭时间 */
-    private Long closeTime;
+    private String closeTime;
 
     /** 支付创建时间 */
-    private Long createTime;
+    private String createTime;
 
     /** 商户扩展参数,回调时会原样返回 */
     private String attach;
