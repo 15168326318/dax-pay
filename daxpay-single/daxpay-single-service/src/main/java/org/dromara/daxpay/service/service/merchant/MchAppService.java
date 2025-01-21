@@ -12,12 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.daxpay.core.exception.ConfigNotExistException;
 import org.dromara.daxpay.core.exception.OperationFailException;
-import org.dromara.daxpay.service.convert.merchant.MchAppConvert;
 import org.dromara.daxpay.service.dao.config.ChannelConfigManager;
 import org.dromara.daxpay.service.dao.merchant.MchAppManager;
 import org.dromara.daxpay.service.entity.config.ChannelConfig;
 import org.dromara.daxpay.service.entity.merchant.MchApp;
-import org.dromara.daxpay.service.enums.MchAppStautsEnum;
+import org.dromara.daxpay.service.enums.MchAppStatusEnum;
 import org.dromara.daxpay.service.param.merchant.MchAppParam;
 import org.dromara.daxpay.service.param.merchant.MchAppQuery;
 import org.dromara.daxpay.service.result.merchant.MchAppResult;
@@ -44,10 +43,10 @@ public class MchAppService {
      * 添加应用
      */
     public void add(MchAppParam param) {
-        MchApp entity = MchAppConvert.CONVERT.toEntity(param);
+        MchApp entity = MchApp.init(param);
         // 生成应用号
         entity.setAppId(this.generateAppId())
-                .setStatus(MchAppStautsEnum.ENABLE.getCode());
+                .setStatus(MchAppStatusEnum.ENABLE.getCode());
         mchAppManager.save(entity);
     }
     /**
@@ -92,7 +91,6 @@ public class MchAppService {
         if (channelConfigManager.existedByField(ChannelConfig::getAppId, mchApp.getAppId())){
             throw new OperationFailException("该商户应用已绑定支付配置，请先删除支付配置");
         }
-
         mchAppManager.deleteById(id);
     }
 

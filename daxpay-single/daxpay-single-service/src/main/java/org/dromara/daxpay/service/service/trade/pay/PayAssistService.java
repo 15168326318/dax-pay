@@ -67,7 +67,7 @@ public class PayAssistService {
         }
         payOrderManager.save(order);
         // 注册支付超时任务
-        delayJobService.registerByTransaction(order.getId(), DaxPayCode.Event.MERCHANT_PAY_TIMEOUT, order.getExpiredTime());
+        delayJobService.registerByTransaction(order.getId(), DaxPayCode.Event.ORDER_PAY_TIMEOUT, order.getExpiredTime());
         return order;
     }
 
@@ -85,6 +85,7 @@ public class PayAssistService {
                 .setReqTime(payParam.getReqTime())
                 .setChannel(payParam.getChannel())
                 .setMethod(payParam.getMethod())
+                .setStatus(PayStatusEnum.PROGRESS.getCode())
                 .setExtraParam(payParam.getExtraParam());
         if (!order.getAllocation()) {
             order.setAllocStatus(null);

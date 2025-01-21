@@ -33,10 +33,10 @@
 
 ## 📃 文档和源码地址
 ### 文档地址
-在 [DaxPay文档站](https://doc.daxpay.cn/) 下的支付网关(DaxPay)模块下可以进行查阅相关文档，具体链接地址如下：
-[快速指南](https://doc.daxpay.cn/single/guides/overview/项目介绍.html)、
-[支付对接](https://doc.daxpay.cn/single/gateway/overview/接口清单.html)、
-[操作手册](https://doc.daxpay.cn/single/admin/config/平台配置.html)
+在 [DaxPay文档站](https://daxpay.dromara.org/) 下的支付网关(DaxPay)模块下可以进行查阅相关文档，具体链接地址如下：
+[快速指南](https://daxpay.dromara.org/single/guides/overview/项目介绍.html)、
+[支付对接](https://daxpay.dromara.org/single/gateway/overview/接口清单.html)、
+[操作手册](https://daxpay.dromara.org/single/admin/config/平台配置.html)
 
 ### 项目地址
 
@@ -71,29 +71,36 @@
 不会对原业务系统的架构产生影响。如果是Java项目，可以使用SDK简化接入流程， 其他语言可以参照中的说明使用HTTP接口方式接入。
 
 ### Java客户端SDK
-> SDK版本号与支付网关的版本保持一致，如果需要使用，请在pom.xml中添加如下依赖。SDK使用方式参考[SDK使用说明](https://doc.daxpay.cn/single/gateway/overview/SDK使用说明.html)。
+> SDK版本号与支付网关的版本保持一致，如果需要使用，请在pom.xml中添加如下依赖。SDK使用方式参考[SDK使用说明](https://daxpay.dromara.org/single/gateway/overview/SDK使用说明.html)。
 
 ```xml
  <!-- 支付SDK -->
 <dependency>
-    <groupId>cn.daxpay.single</groupId>
+    <groupId>org.dromara.daxpay</groupId>
     <artifactId>daxpay-single-sdk</artifactId>
     <version>${latest.version}</version>
 </dependency>
 ```
 ### SDK调用示例
 ```java
-package org.dromara.daxpay.test;
+package org.dromara.daxpay.single.sdk.test.trade;
 
-import cn.daxpay.single.sdk.code.SignTypeEnum;
-import cn.daxpay.single.sdk.model.trade.pay.PayOrderModel;
-import cn.daxpay.single.sdk.net.DaxPayConfig;
-import cn.daxpay.single.sdk.net.DaxPayKit;
-import cn.daxpay.single.sdk.param.trade.pay.PayQueryParam;
-import cn.daxpay.single.sdk.response.DaxPayResult;
-import cn.daxpay.single.sdk.util.JsonUtil;
+import org.dromara.daxpay.single.sdk.code.ChannelEnum;
+import org.dromara.daxpay.single.sdk.code.PayMethodEnum;
+import org.dromara.daxpay.single.sdk.code.SignTypeEnum;
+import org.dromara.daxpay.single.sdk.model.trade.pay.PayResultModel;
+import org.dromara.daxpay.single.sdk.net.DaxPayConfig;
+import org.dromara.daxpay.single.sdk.net.DaxPayKit;
+import org.dromara.daxpay.single.sdk.param.channel.AlipayParam;
+import org.dromara.daxpay.single.sdk.param.channel.WechatPayParam;
+import org.dromara.daxpay.single.sdk.param.trade.pay.PayParam;
+import org.dromara.daxpay.single.sdk.response.DaxPayResult;
+import org.dromara.daxpay.single.sdk.util.JsonUtil;
+import org.dromara.daxpay.single.sdk.util.PaySignUtil;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.math.BigDecimal;
 
 /**
  * 统一支付接口
@@ -108,24 +115,24 @@ public class PayOrderTest {
         DaxPayConfig config = DaxPayConfig.builder()
                 .serviceUrl("http://127.0.0.1:9999")
                 .signSecret("123456")
-                .appId("M7934041241299655")
+                .appId("123")
                 .signType(SignTypeEnum.HMAC_SHA256)
                 .build();
         DaxPayKit.initConfig(config);
     }
 
-     /**
-     * 支付宝支付(二维码扫码)
+    /**
+     * 微信支付(二维码扫码)
      */
     @Test
-    public void aliPayQrPay() {
+    public void wxQrPay() {
         PayParam param = new PayParam();
         param.setClientIp("127.0.0.1");
         param.setBizOrderNo("SDK_"+ System.currentTimeMillis());
-        param.setTitle("测试支付宝扫码支付");
-        param.setDescription("这是支付宝扫码支付");
-        param.setAmount(BigDecimal.valueOf(10));
-        param.setChannel(ChannelEnum.ALI.getCode());
+        param.setTitle("测试微信扫码支付");
+        param.setDescription("这是支付备注");
+        param.setAmount(BigDecimal.valueOf(1.00));
+        param.setChannel(ChannelEnum.WECHAT.getCode());
         param.setMethod(PayMethodEnum.QRCODE.getCode());
         param.setAttach("{回调参数}");
         param.setAllocation(false);
@@ -134,8 +141,10 @@ public class PayOrderTest {
 
         DaxPayResult<PayResultModel> execute = DaxPayKit.execute(param);
         System.out.println(JsonUtil.toJsonStr(execute));
+        System.out.println(PaySignUtil.hmacSha256Sign(execute, "123456"));
     }
 }
+
 ```
 
 ## 🍎 系统截图
@@ -161,9 +170,9 @@ public class PayOrderTest {
 
 扫码加入QQ交流群
 
-交流二群: 598644350
+交流三群: 879409917
 <p>
-<img src="https://cdn.jsdmirror.com/gh/xxm1995/picx-images-hosting@master/connect/微信图片_20240513180310.2yy68aykip.webp" width = "330" height = "500"/>
+<img src="https://cdn.jsdmirror.com/gh/xxm1995/picx-images-hosting@master/connect/1733360741745_d.83a33entp3.webp" width = "330" height = "500"/>
 </p>
 
 扫码加入钉钉交流群: [加群连接](https://qr.dingtalk.com/action/joingroup?code=v1,k1,AzkcWLa8J/OHXi+nTWwNRc68IAJ0ckWXEEIvrJofq2A=&_dt_no_comment=1&origin=11)

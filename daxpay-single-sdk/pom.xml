@@ -3,14 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>cn.daxpay.single</groupId>
+    <groupId>org.dromara.daxpay</groupId>
     <artifactId>daxpay-single-sdk</artifactId>
-    <version>3.0.0.beta1</version>
+    <version>3.0.0.beta4</version>
     <packaging>jar</packaging>
 
     <!-- 项目信息 -->
     <name>daxpay-single-sdk</name>
-    <description>daxpay-multi-sdk 是 daxpay单商户版的JavaSDK，用于业务系统快速接入到支付网关中</description>
+    <description>daxpay-single-sdk 是 daxpay单商户版的JavaSDK，用于业务系统快速接入到支付网关中</description>
     <url>https://github.com/dromara/dax-pay</url>
 
     <!-- 许可证 -->
@@ -43,8 +43,8 @@
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <logback-classic.version>1.5.6</logback-classic.version>
-        <hutool.version>5.8.31</hutool.version>
-        <bouncycastle.version>1.78.1</bouncycastle.version>
+        <hutool.version>5.8.35</hutool.version>
+        <bouncycastle.version>1.79</bouncycastle.version>
         <springdoc.version>2.5.0</springdoc.version>
         <lombok.version>1.18.30</lombok.version>
         <junit.version>4.13.2</junit.version>

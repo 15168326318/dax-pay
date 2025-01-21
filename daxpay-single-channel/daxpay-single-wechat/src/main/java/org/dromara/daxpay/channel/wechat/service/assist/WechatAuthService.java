@@ -29,9 +29,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WechatAuthService {
 
-    private final WechatPayConfigService wechatPayConfigService;
+    private final WechatPayConfigService weChatPayConfigService;
 
     private final PlatformConfigService platformsConfigService;
+    private final WechatPayConfigService wechatPayConfigService;
+    private final PlatformConfigService platformConfigService;
 
     /**
      * 构建微信oauth2授权的url连接
@@ -46,11 +48,30 @@ public class WechatAuthService {
         } else {
             PlatformConfig platformConfig = platformsConfigService.getConfig();
             String queryCode = RandomUtil.randomString(10);
+            // 判断是否独立部署前端
             String serverUrl = platformConfig.getGatewayMobileUrl();
             String redirectUrl = StrUtil.format("{}/wechat/auth/{}/{}/{}", serverUrl, param.getAppId(), param.getChannel(),queryCode);
             String authUrl = wxMpService.getOAuth2Service().buildAuthorizationUrl(redirectUrl, WxConsts.OAuth2Scope.SNSAPI_BASE, "");
             return new AuthUrlResult().setAuthUrl(authUrl).setQueryCode(queryCode);
         }
+    }
+
+    /**
+     * 生成内部使用的授权链接, 返回授权码给调用者, 由调用者自己再去获取授权信息
+     * @param authPath 授权链接, 需要为h5项目中的可访问路由路径
+     */
+    public String generateInnerAuthUrl(String authPath) {
+        WechatPayConfig config = wechatPayConfigService.getWechatPayConfig(false);
+        WxMpService wxMpService = this.getWxMpService(config);
+
+        // 如果配置中有地址配置则使用, 没有的话使用平台地址进行拼接
+        String serverUrl = config.getAuthUrl();
+        if (StrUtil.isBlank(serverUrl)){
+            PlatformConfig platformConfig = platformConfigService.getConfig();
+            serverUrl = platformConfig.getGatewayMobileUrl();
+        }
+        String redirectUrl = StrUtil.format("{}{}", serverUrl, authPath);
+        return wxMpService.getOAuth2Service().buildAuthorizationUrl(redirectUrl, WxConsts.OAuth2Scope.SNSAPI_BASE, "");
     }
 
     /**
@@ -69,7 +90,13 @@ public class WechatAuthService {
      * 获取微信公众号API的Service
      */
     private WxMpService getWxMpService() {
-        WechatPayConfig config = wechatPayConfigService.getAndCheckConfig();
+        WechatPayConfig config = wechatPayConfigService.getAndCheckConfig(false);
+        return getWxMpService(config);
+    }
+    /**
+     * 获取微信公众号API的Service
+     */
+    private WxMpService getWxMpService(WechatPayConfig config) {
         WxMpService wxMpService = new WxMpServiceImpl();
         WxMpDefaultConfigImpl wxMpConfig = new WxMpDefaultConfigImpl();
         wxMpConfig.setAppId(config.getWxAppId()); // 设置微信公众号的appid

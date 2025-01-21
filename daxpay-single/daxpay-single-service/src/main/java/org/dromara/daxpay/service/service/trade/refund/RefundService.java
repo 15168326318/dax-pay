@@ -1,9 +1,14 @@
 package org.dromara.daxpay.service.service.trade.refund;
 
-import cn.bootx.platform.starter.redis.delay.service.DelayJobService;
 import cn.bootx.platform.core.exception.DataNotExistException;
 import cn.bootx.platform.core.util.BigDecimalUtil;
 import cn.bootx.platform.core.util.ValidationUtil;
+import cn.bootx.platform.starter.redis.delay.service.DelayJobService;
+import cn.hutool.extra.spring.SpringUtil;
+import com.baomidou.lock.LockInfo;
+import com.baomidou.lock.LockTemplate;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dromara.daxpay.core.enums.PayRefundStatusEnum;
 import org.dromara.daxpay.core.enums.RefundStatusEnum;
 import org.dromara.daxpay.core.exception.TradeNotExistException;
@@ -22,11 +27,6 @@ import org.dromara.daxpay.service.service.order.pay.PayOrderQueryService;
 import org.dromara.daxpay.service.service.record.flow.TradeFlowRecordService;
 import org.dromara.daxpay.service.strategy.AbsRefundStrategy;
 import org.dromara.daxpay.service.util.PaymentStrategyFactory;
-import cn.hutool.extra.spring.SpringUtil;
-import com.baomidou.lock.LockInfo;
-import com.baomidou.lock.LockTemplate;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -91,11 +91,10 @@ public class RefundService {
      * 首次退款
      */
     private RefundResult firstRefund(RefundParam param) {
-
         // 获取支付订单
         PayOrder payOrder = payOrderQueryService.findByBizOrOrderNo(param.getOrderNo(), param.getBizOrderNo(), param.getAppId())
                 .orElseThrow(() -> new DataNotExistException("支付订单不存在"));
-        // 检查退款参数
+        // 检查退款参数和支付订单
         refundAssistService.checkAndParam(param, payOrder);
         // 通过退款参数获取退款策略
         AbsRefundStrategy refundStrategy = PaymentStrategyFactory.create(payOrder.getChannel(), AbsRefundStrategy.class);
@@ -112,7 +111,7 @@ public class RefundService {
         } catch (Exception e) {
             log.error("退款出现错误", e);
             // 更新退款失败的记录
-            refundAssistService.updateOrderByError(refundOrder, e);
+            refundAssistService.updateOrderByError(refundOrder, e.getMessage());
             return refundAssistService.buildResult(refundOrder);
         }
         SpringUtil.getBean(this.getClass()).successHandler(refundOrder, payOrder, refundResultBo);
@@ -160,11 +159,11 @@ public class RefundService {
             // 执行退款策略
             refundResultBo = refundStrategy.doRefundHandler();
             // 注册一个两分钟后执行的同步任务, 作为接不到回调任务的兜底
-            delayJobService.registerByTransaction(refundOrder.getId(), DaxPayCode.Event.MERCHANT_PAY_TIMEOUT, 2*60*1000L);
+            delayJobService.registerByTransaction(refundOrder.getId(), DaxPayCode.Event.ORDER_PAY_TIMEOUT, 2*60*1000L);
         } catch (Exception e) {
             log.error("重新退款失败:", e);
             // 记录退款失败的记录
-            refundAssistService.updateOrderByError(refundOrder, e);
+            refundAssistService.updateOrderByError(refundOrder, e.getMessage());
             // 返回错误响应对象
             return refundAssistService.buildResult(refundOrder);
         }
@@ -218,7 +217,7 @@ public class RefundService {
             merchantNoticeService.registerRefundNotice(refundOrder);
         } else {
             // 注册延时同步事件
-            delayJobService.registerByTransaction(refundOrder.getId(), DaxPayCode.Event.MERCHANT_REFUND_SYNC, 2*60*1000L);
+            delayJobService.registerByTransaction(refundOrder.getId(), DaxPayCode.Event.ORDER_REFUND_SYNC, 2*60*1000L);
         }
         refundOrderManager.updateById(refundOrder);
     }

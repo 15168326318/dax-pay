@@ -7,6 +7,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.daxpay.core.enums.SignTypeEnum;
+import org.dromara.daxpay.core.exception.ConfigNotEnableException;
 import org.dromara.daxpay.core.exception.VerifySignFailedException;
 import org.dromara.daxpay.core.param.PaymentCommonParam;
 import org.dromara.daxpay.core.result.DaxResult;
@@ -16,6 +17,7 @@ import org.dromara.daxpay.service.common.context.ClientLocal;
 import org.dromara.daxpay.service.common.context.MchAppLocal;
 import org.dromara.daxpay.service.common.local.PaymentContextLocal;
 import org.dromara.daxpay.service.entity.merchant.MchApp;
+import org.dromara.daxpay.service.enums.MchAppStatusEnum;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -94,7 +96,7 @@ public class PaymentAssistService {
         else if (Objects.equals(SignTypeEnum.MD5.getCode(), signType)){
             result.setSign(PaySignUtil.md5Sign(result, mchAppInfo.getSignSecret()));
         } else if (Objects.equals(SignTypeEnum.SM3.getCode(), signType)){
-            result.setSign(PaySignUtil.md5Sign(result, mchAppInfo.getSignSecret()));
+            result.setSign(PaySignUtil.sm3Sign(result, mchAppInfo.getSignSecret()));
         }
         else {
             throw new ValidationFailedException("未获取到签名方式，请检查");
@@ -113,7 +115,7 @@ public class PaymentAssistService {
         else if (Objects.equals(SignTypeEnum.MD5.getCode(), signType)){
             return PaySignUtil.md5Sign(param, mchAppInfo.getSignSecret());
         } else if (Objects.equals(SignTypeEnum.SM3.getCode(), signType)){
-            return PaySignUtil.md5Sign(param, mchAppInfo.getSignSecret());
+            return PaySignUtil.sm3Sign(param, mchAppInfo.getSignSecret());
         }
         else {
             throw new ValidationFailedException("未获取到签名方式，请检查");
@@ -131,6 +133,9 @@ public class PaymentAssistService {
     public void initMchApp(String appId) {
         // 获取应用信息
         MchApp mchApp = mchAppCacheService.get(appId);
+        if (!Objects.equals(mchApp.getStatus(), MchAppStatusEnum.ENABLE.getCode())){
+            throw new ConfigNotEnableException("商户应用未启用");
+        }
         // 初始化支付上下文信息
         MchAppLocal mchAppInfo = PaymentContextLocal.get().getMchAppInfo();
         BeanUtil.copyProperties(mchApp, mchAppInfo);

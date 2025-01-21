@@ -92,8 +92,8 @@ public class ReconcileDiscrepancyService {
                 discrepancies.add(reconcileAssistService.buildDiscrepancy(statement,channelDetail));
                 continue;
             }
-            // 如果远程和本地都存在, 比对差异
-            if (this.reconcileDiff(channelDetail, localTrade)) {
+            // 如果远程和本地都存在, 判断是否有差异
+            if (!this.reconcileDiff(channelDetail, localTrade)) {
                 discrepancies.add(reconcileAssistService.buildDiscrepancy(statement, localTrade, channelDetail));
             }
         }
@@ -109,7 +109,7 @@ public class ReconcileDiscrepancyService {
     }
 
     /**
-     * 判断订单之间存是否有差异
+     * 判断订单之间存是否有差异, 没有差异返回true, 有差异返回false
      * @param outDetail 下载的对账订单(通道交易)
      * @param localTrade 本地交易订单(平台交易)
      */
@@ -117,16 +117,16 @@ public class ReconcileDiscrepancyService {
 
         // 判断类型是否相同
         if (!Objects.equals(outDetail.getTradeType(), localTrade.getTradeType())){
-            return false;
+            return true;
         }
         // 判断金额是否一致
         if (!Objects.equals(outDetail.getAmount(), localTrade.getAmount())){
-            return false;
+            return true;
         }
         // 判断状态是否一致
         if (!Objects.equals(outDetail.getTradeStatus(), localTrade.getTradeStatus())){
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 }

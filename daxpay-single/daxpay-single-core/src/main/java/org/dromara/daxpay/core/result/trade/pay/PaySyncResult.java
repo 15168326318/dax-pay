@@ -16,7 +16,7 @@ import lombok.experimental.Accessors;
 public class PaySyncResult  {
 
     /**
-     * 退款订单同步后的状态状态
+     * 订单同步后的状态状态
      * @see org.dromara.daxpay.core.enums.PayStatusEnum
      */
     @Schema(description = "同步状态")

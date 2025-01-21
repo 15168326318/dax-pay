@@ -39,7 +39,7 @@ public class RefundOrder extends MchAppBaseEntity implements ToResult<RefundOrde
     /** 通道支付订单号 */
     private String outOrderNo;
 
-    /** 支付标题 */
+    /** 退款标题 */
     private String title;
 
     /** 退款号 */
@@ -76,9 +76,11 @@ public class RefundOrder extends MchAppBaseEntity implements ToResult<RefundOrde
     private String status;
 
     /** 错误码 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String errorCode;
 
     /** 错误信息 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String errorMsg;
 
     /** 异步通知地址 */
