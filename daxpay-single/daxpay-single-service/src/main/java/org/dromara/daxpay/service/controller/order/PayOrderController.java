@@ -8,7 +8,9 @@ import cn.bootx.platform.core.rest.param.PageParam;
 import cn.bootx.platform.core.rest.result.PageResult;
 import cn.bootx.platform.core.rest.result.Result;
 import org.dromara.daxpay.service.entity.order.pay.PayOrder;
+import org.dromara.daxpay.service.entity.order.pay.PayOrderStatis;
 import org.dromara.daxpay.service.param.order.pay.PayOrderQuery;
+import org.dromara.daxpay.service.param.order.pay.PayOrderQueryExt;
 import org.dromara.daxpay.service.result.order.pay.PayOrderVo;
 import org.dromara.daxpay.service.service.order.pay.PayOrderQueryService;
 import org.dromara.daxpay.service.service.order.pay.PayOrderService;
@@ -17,13 +19,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.dromara.daxpay.service.service.trade.pay.PayAssistService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 支付订单控制器
@@ -39,12 +42,66 @@ import java.math.BigDecimal;
 public class PayOrderController {
     private final PayOrderQueryService queryService;
     private final PayOrderService payOrderService;
+    private final PayAssistService payAssistService;
 
+    @RequestPath("新增订单")
+    @Operation(summary = "新增订单")
+    @PostMapping("/add")
+    public Result<String> add(@RequestBody PayOrderQueryExt param){
+        payAssistService.createPayOrders(param.getStart(),param.getEnd());
+        return Res.ok();
+    }
     @RequestPath("分页查询")
     @Operation(summary = "分页查询")
     @GetMapping("/page")
-    public Result<PageResult<PayOrderVo>> page(PageParam pageParam, PayOrderQuery param){
-        return Res.ok(queryService.page(pageParam,param));
+    public Result<PageResult<PayOrderVo>> page(PageParam pageParam, PayOrderQuery param, PayOrderQueryExt ext){
+        if(ext.getEnd() != null) {
+            param.setCreateTime(new PayOrderQuery.Between(ext.getStart(), ext.getEnd()));
+        }
+        if("cashout".equals(param.getStatus())) {
+            PageResult<PayOrderVo>  pageResult =  queryService.page(pageParam, param);
+            pageResult.getRecords().forEach(a -> a.setChannel("bank_transfer"));
+            return Res.ok(pageResult);
+
+        } else {
+            return Res.ok(queryService.page(pageParam, param));
+        }
+    }
+
+    @RequestPath("统计")
+    @Operation(summary = "统计")
+    @GetMapping("/statistics")
+    public Result<List<PayOrderStatis>> statistics(PayOrderQuery param){
+
+        List<PayOrder> list = queryService.statistics(param);
+        List<PayOrderStatis> result =  list.stream().map(a -> {
+            PayOrderStatis payOrderStatis = new PayOrderStatis();
+            payOrderStatis.setBizName(a.getBizName());
+            payOrderStatis.setAmount(a.getAmount());
+            payOrderStatis.setRefundableBalance(a.getRefundableBalance());
+            payOrderStatis.setMethod(a.getMethod());
+            return payOrderStatis;
+        }).collect(Collectors.toList());
+        //总计
+        if(result!=null && result.size()>1) {
+            PayOrderStatis payOrderStatis = new PayOrderStatis();
+            payOrderStatis.setBizName("总计");
+            // 使用 reduce 累加
+            BigDecimal totalAmount = result.stream()
+                    .map(PayOrderStatis::getAmount)
+                    .reduce(BigDecimal.valueOf(0.0), BigDecimal::add); // 初始值为 0.0，累加逻辑为 Double::sum
+            BigDecimal refundableBalance = result.stream()
+                    .map(PayOrderStatis::getRefundableBalance)
+                    .reduce(BigDecimal.valueOf(0.0), BigDecimal::add); // 初始值为 0.0，累加逻辑为 Double::sum
+            BigDecimal method = result.stream()
+                    .map(a -> new BigDecimal(a.getMethod()))
+                    .reduce(BigDecimal.valueOf(0.0), BigDecimal::add); // 初始值为 0.0，累加逻辑为 Double::sum
+            payOrderStatis.setMethod(method+"");
+            payOrderStatis.setAmount(totalAmount);
+            payOrderStatis.setRefundableBalance(refundableBalance);
+            result.add(payOrderStatis);
+        }
+        return Res.ok(result);
     }
 
     @RequestPath("查询订单详情")
@@ -70,7 +127,10 @@ public class PayOrderController {
     @RequestPath("查询金额汇总")
     @Operation(summary = "查询金额汇总")
     @GetMapping("/getTotalAmount")
-    public Result<BigDecimal> getTotalAmount(PayOrderQuery param){
+    public Result<BigDecimal> getTotalAmount(PayOrderQuery param, PayOrderQueryExt ext){
+        if(ext.getEnd() != null) {
+            param.setCreateTime(new PayOrderQuery.Between(ext.getStart(), ext.getEnd()));
+        }
         return Res.ok(queryService.getTotalAmount(param));
     }
 

@@ -27,6 +27,10 @@ public class PayOrderVo extends MchAppResult {
     /** 商户订单号 */
     @Schema(description = "商户订单号")
     private String bizOrderNo;
+    private String bizName;
+    private String bizCode;
+    /**数量*/
+    private String quantity;
 
     @Schema(description = "支付订单号")
     private String orderNo;

@@ -1,5 +1,6 @@
 package org.dromara.daxpay.service.param.order.pay;
 
+import cn.bootx.platform.common.mybatisplus.query.function.QueryBetween;
 import cn.bootx.platform.core.annotation.QueryParam;
 import org.dromara.daxpay.core.enums.ChannelEnum;
 import org.dromara.daxpay.core.enums.PayAllocStatusEnum;
@@ -10,6 +11,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDateTime;
 
 /**
  * 支付订单查询参数
@@ -21,12 +25,16 @@ import lombok.experimental.Accessors;
 @QueryParam(type = QueryParam.CompareTypeEnum.LIKE)
 @Accessors(chain = true)
 @Schema(title = "支付订单查询参数")
-public class PayOrderQuery extends MchAppQuery {
+public class PayOrderQuery extends MchAppQuery  {
 
     /** 商户订单号 */
     @Schema(description = "商户订单号")
     private String bizOrderNo;
-
+    private String bizName;
+    @QueryParam(type = QueryParam.CompareTypeEnum.EQ)
+    private String bizCode;
+    /**数量*/
+    private String quantity;
     /** 支付订单号 */
     @Schema(description = "支付订单号")
     private String orderNo;
@@ -92,5 +100,36 @@ public class PayOrderQuery extends MchAppQuery {
     /** 错误码 */
     @Schema(description = "错误码")
     private String errorCode;
+
+    @QueryParam(type = QueryParam.CompareTypeEnum.BETWEEN)
+    private Between createTime ;
+
+
+
+
+    public static class Between implements QueryBetween {
+
+        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        private LocalDateTime start;
+        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        private LocalDateTime end;
+
+        public Between(LocalDateTime start, LocalDateTime end) {
+            this.start = start;
+            this.end = end;
+        }
+        public Between() {
+        }
+
+        @Override
+        public Object getStart() {
+            return start;
+        }
+
+        @Override
+        public Object getEnd() {
+            return end;
+        }
+    }
 
 }

@@ -8,9 +8,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.daxpay.core.enums.PayAllocStatusEnum;
-import org.dromara.daxpay.core.enums.PayRefundStatusEnum;
-import org.dromara.daxpay.core.enums.PayStatusEnum;
+import org.dromara.daxpay.core.enums.*;
 import org.dromara.daxpay.core.exception.AmountExceedLimitException;
 import org.dromara.daxpay.core.exception.TradeStatusErrorException;
 import org.dromara.daxpay.core.param.trade.pay.PayParam;
@@ -27,9 +25,10 @@ import org.dromara.daxpay.service.service.order.pay.PayOrderQueryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 支付支持服务
@@ -40,6 +39,8 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class PayAssistService {
+
+    private static  int total = 1;
 
     private final PayOrderManager payOrderManager;
     private final PayOrderQueryService payOrderQueryService;
@@ -69,6 +70,72 @@ public class PayAssistService {
         // 注册支付超时任务
         delayJobService.registerByTransaction(order.getId(), DaxPayCode.Event.ORDER_PAY_TIMEOUT, order.getExpiredTime());
         return order;
+    }
+
+    public void createPayOrders(LocalDateTime startTime,LocalDateTime endTime) {
+        LocalDateTime currentTime =  startTime;
+        List<PayOrder> list = new ArrayList<>();
+
+        int count =0;
+        while (currentTime.isBefore(endTime)) {
+            PayOrder order = new PayOrder();
+            int quantity = new Random().nextInt(3) + 1;
+            int  index = new Random().nextInt(productEnum.values().length);
+            int  bizIndex = new Random().nextInt(StoreEnum.values().length);
+            order.setBizOrderNo(TradeNoGenerateUtil.store())
+                    .setBizName(StoreEnum.values()[bizIndex].getName())
+                    .setBizCode(StoreEnum.values()[bizIndex].getCode())
+                    .setQuantity(quantity + "")//数量
+                    .setTitle(productEnum.values()[index].getName())//产品
+                    .setAmount(BigDecimal.valueOf(productEnum.values()[index].getPrivt().doubleValue() * quantity))//金额
+                    .setOrderNo(TradeNoGenerateUtil.pay())
+                    .setStatus(PayStatusEnum.SUCCESS.getCode())
+                    .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
+                    .setChannel(ChannelEnum.values()[new Random().nextInt(ChannelEnum.values().length)].getCode())
+                    .setMethod(PayMethodEnum.values()[new Random().nextInt(PayMethodEnum.values().length)].getCode())
+                    .setExpiredTime(LocalDateTime.now().plus(Duration.ofHours(1)))
+                    .setReqTime(LocalDateTime.now())
+                    .setRefundableBalance(BigDecimal.valueOf(0));
+            order.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
+            order.setCreateTime(TradeNoGenerateUtil.generateRandomTime(currentTime.toLocalDate()));;
+            order.setVersion(3);
+            list.add(order);
+            count ++;
+            if(list.size() > 100) {
+                payOrderManager.saveBatch(list, list.size());
+                list.clear();
+            }
+            if(count > 1500) {
+                currentTime = currentTime.plusDays(1);
+                count = 0;
+            }
+            //三天提现一次
+            if(total % 4500 == 0) {
+                final LocalDateTime createTime = currentTime;
+                Arrays.stream(StoreEnum.values()).forEach(a -> {
+                    PayOrder payOrder = new PayOrder();
+                    payOrder.setBizOrderNo(TradeNoGenerateUtil.refund())
+                            .setBizName(a.getName())
+                            .setBizCode(a.getCode())
+                            .setTitle(productEnum.values()[index].getName())//产品
+                            .setAmount(new BigDecimal(TradeNoGenerateUtil.generateRandomMoney()))//提现金额
+                            .setOrderNo(TradeNoGenerateUtil.refund())
+                            .setStatus(PayStatusEnum.CASHOUT.getCode())
+                            .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
+                            .setChannel(ChannelEnum.values()[new Random().nextInt(ChannelEnum.values().length)].getCode())
+                            .setMethod(PayMethodEnum.values()[new Random().nextInt(PayMethodEnum.values().length)].getCode())
+                            .setExpiredTime(LocalDateTime.now().plus(Duration.ofHours(1)))
+                            .setReqTime(LocalDateTime.now())
+                            .setRefundableBalance(BigDecimal.valueOf(0));
+                    payOrder.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
+                    payOrder.setCreateTime(TradeNoGenerateUtil.generateRandomTime(createTime.toLocalDate()));;
+                    payOrder.setVersion(3);
+                    payOrderManager.save(payOrder);
+                });
+
+            }
+            total ++;
+        }
     }
 
     /**

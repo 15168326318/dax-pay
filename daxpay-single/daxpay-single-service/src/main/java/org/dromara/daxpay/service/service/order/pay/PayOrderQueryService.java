@@ -4,6 +4,10 @@ import cn.bootx.platform.common.mybatisplus.util.MpUtil;
 import cn.bootx.platform.core.exception.ValidationFailedException;
 import cn.bootx.platform.core.rest.param.PageParam;
 import cn.bootx.platform.core.rest.result.PageResult;
+import cn.hutool.core.date.LocalDateTimeUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.apache.commons.lang3.StringUtils;
+import org.dromara.daxpay.core.enums.PayStatusEnum;
 import org.dromara.daxpay.core.exception.TradeNotExistException;
 import org.dromara.daxpay.core.param.trade.pay.QueryPayParam;
 import org.dromara.daxpay.core.result.trade.pay.PayOrderResult;
@@ -11,6 +15,7 @@ import org.dromara.daxpay.service.convert.order.pay.PayOrderConvert;
 import org.dromara.daxpay.service.dao.order.pay.PayOrderManager;
 import org.dromara.daxpay.service.entity.order.pay.PayOrder;
 import org.dromara.daxpay.service.param.order.pay.PayOrderQuery;
+import org.dromara.daxpay.service.param.report.TradeReportQuery;
 import org.dromara.daxpay.service.result.order.pay.PayOrderVo;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -19,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -40,6 +47,15 @@ public class PayOrderQueryService {
         Page<PayOrder> page = payOrderManager.page(pageParam, param);
         return MpUtil.toPageResult(page);
     }
+
+    /**
+     * 统计
+     */
+    public List<PayOrder> statistics(PayOrderQuery payOrder) {
+
+        return payOrderManager.statistics(payOrder);
+    }
+
 
     /**
      * 根据id查询

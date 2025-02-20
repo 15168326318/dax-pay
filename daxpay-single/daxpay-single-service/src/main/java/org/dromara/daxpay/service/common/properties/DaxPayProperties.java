@@ -32,7 +32,7 @@ public class DaxPayProperties {
 
     public void setEnv(String env) {
         this.env = env;
-        TradeNoGenerateUtil.setEnv(env);
+//        TradeNoGenerateUtil.setEnv(env);
     }
 
     public String getFrontH5Url() {

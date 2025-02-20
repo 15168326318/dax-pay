@@ -21,6 +21,7 @@ public enum PayStatusEnum {
     SUCCESS("success","成功"),
     CLOSE("close","支付关闭"),
     CANCEL("cancel","支付撤销"),
+    CASHOUT("cashout","提现"),
     FAIL("fail","失败"),
     /** 订单到了超时时间, 被手动设置订单为这个状态 */
     TIMEOUT("timeout", "支付超时"),

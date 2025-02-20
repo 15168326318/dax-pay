@@ -33,9 +33,16 @@ public class PayOrder extends MchAppBaseEntity implements ToResult<PayOrderVo> {
 
     /** 商户订单号 */
     private String bizOrderNo;
+    /** 商户名称 */
+    private String bizName;
+    /** 商户编码*/
+    private String bizCode;
+    /**数量*/
+    private String quantity;
 
     /** 订单号 */
     private String orderNo;
+
 
     /** 通道订单号 */
     private String outOrderNo;
@@ -145,6 +152,40 @@ public class PayOrder extends MchAppBaseEntity implements ToResult<PayOrderVo> {
 
     @Override
     public PayOrderVo toResult() {
-        return PayOrderConvert.CONVERT.toVo(this);
+
+            PayOrderVo payOrderVo = new PayOrderVo();
+
+            payOrderVo.setId( this.getId() );
+            payOrderVo.setCreateTime( this.getCreateTime() );
+            payOrderVo.setAppId( this.getAppId() );
+            payOrderVo.setBizOrderNo( this.getBizOrderNo() );
+            payOrderVo.setBizCode(this.getBizCode());
+            payOrderVo.setBizName(this.getBizName());
+        payOrderVo.setQuantity(this.getQuantity());
+        payOrderVo.setOrderNo( this.getOrderNo() );
+        payOrderVo.setOutOrderNo( this.getOutOrderNo() );
+        payOrderVo.setTitle( this.getTitle() );
+        payOrderVo.setDescription( this.getDescription() );
+        payOrderVo.setAllocation( this.getAllocation() );
+            payOrderVo.setAutoAllocation( this.getAutoAllocation() );
+            payOrderVo.setChannel( this.getChannel() );
+            payOrderVo.setMethod( this.getMethod() );
+            payOrderVo.setAmount( this.getAmount() );
+            payOrderVo.setRefundableBalance( this.getRefundableBalance() );
+            payOrderVo.setStatus( this.getStatus() );
+            payOrderVo.setRefundStatus( this.getRefundStatus() );
+            payOrderVo.setAllocStatus( this.getAllocStatus() );
+            payOrderVo.setPayTime( this.getPayTime() );
+            payOrderVo.setCloseTime( this.getCloseTime() );
+            payOrderVo.setExpiredTime( this.getExpiredTime() );
+            payOrderVo.setClientIp( this.getClientIp() );
+            payOrderVo.setNotifyUrl( this.getNotifyUrl() );
+            payOrderVo.setAttach( this.getAttach() );
+            payOrderVo.setReqTime( this.getReqTime() );
+            payOrderVo.setErrorCode( this.getErrorCode() );
+            payOrderVo.setErrorMsg( this.getErrorMsg() );
+
+            return payOrderVo;
+        
     }
 }

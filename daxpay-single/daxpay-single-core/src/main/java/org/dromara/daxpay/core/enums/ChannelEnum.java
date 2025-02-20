@@ -22,6 +22,8 @@ public enum ChannelEnum {
     WECHAT("wechat_pay"),
     /** 微信支付服务商 */
     WECHAT_ISV("wechat_pay_isv"),
+    /** 银行转账 */
+    BANK_TRANSFER("bank_transfer"),
     /** 云闪付 */
     UNION_PAY("union_pay"),
 

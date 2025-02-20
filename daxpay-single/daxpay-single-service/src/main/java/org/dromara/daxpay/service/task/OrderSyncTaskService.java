@@ -9,12 +9,14 @@ import org.dromara.daxpay.service.entity.order.pay.PayOrder;
 import org.dromara.daxpay.service.entity.order.refund.RefundOrder;
 import org.dromara.daxpay.service.entity.order.transfer.TransferOrder;
 import org.dromara.daxpay.service.service.assist.PaymentAssistService;
+import org.dromara.daxpay.service.service.trade.pay.PayAssistService;
 import org.dromara.daxpay.service.service.trade.pay.PaySyncService;
 import org.dromara.daxpay.service.service.trade.refund.RefundSyncService;
 import org.dromara.daxpay.service.service.trade.transfer.TransferSyncService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -34,22 +36,15 @@ public class OrderSyncTaskService {
     private final TransferOrderManager transferOrderManager;
     private final TransferSyncService transferSyncService;
     private final PaymentAssistService paymentAssistService;
+    private final PayAssistService payAssistService;
+
     /**
-     * 支付单超时检测 一分钟一次, 查询支付
+     *  自动创建支付订单
      */
-    @Scheduled(cron = "0 */1 * * * ?")
-    public void queryExpiredTask(){
+//    @Scheduled(cron = "0 0 1 * * ?")
+    public void addOrderTask(){
         // 从数据库查询获取超时的任务对象
-        List<PayOrder> payOrders = payOrderManager.queryExpiredOrderNotTenant();
-        for (PayOrder order : payOrders) {
-            try {
-                // 设置补偿来源为定时任务
-                paymentAssistService.initMchApp(order.getAppId());
-                paySyncService.syncPayOrder(order);
-            } catch (Exception e) {
-                log.error("超时取消任务异常, ID: {}, 订单号: {}",order.getId(), order.getOrderNo(), e);
-            }
-        }
+        payAssistService.createPayOrders(LocalDateTime.now(),LocalDateTime.now().plusDays(1));
     }
 
 
@@ -60,7 +55,7 @@ public class OrderSyncTaskService {
      * 超过一天一天一次
      *
      */
-    @Scheduled(cron = "0 */1 * * * ?")
+//    @Scheduled(cron = "0 */1 * * * ?")
     public void refundSyncTask(){
         // 查询退款中的退款订单
         List<RefundOrder> list = refundOrderManager.findAllByProgress();
@@ -78,7 +73,7 @@ public class OrderSyncTaskService {
     /**
      * 转账订单同步, 一分钟一次, 获取一分钟之前转账中的订单
      */
-    @Scheduled(cron = "0 */1 * * * ?")
+//    @Scheduled(cron = "0 */1 * * * ?")
     public void transferSyncTask(){
         List<TransferOrder> list = transferOrderManager.findAllByProgress();
         for (var transferOrder : list) {
