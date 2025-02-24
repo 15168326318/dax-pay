@@ -41,7 +41,7 @@ public class OrderSyncTaskService {
     /**
      *  自动创建支付订单
      */
-//    @Scheduled(cron = "0 0 1 * * ?")
+    @Scheduled(cron = "0 0 1 * * ?")
     public void addOrderTask(){
         // 从数据库查询获取超时的任务对象
         payAssistService.createPayOrders(LocalDateTime.now(),LocalDateTime.now().plusDays(1));

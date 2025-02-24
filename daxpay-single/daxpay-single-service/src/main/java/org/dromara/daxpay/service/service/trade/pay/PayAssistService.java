@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -93,25 +94,33 @@ public class PayAssistService {
                     .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
                     .setChannel(ChannelEnum.values()[new Random().nextInt(ChannelEnum.values().length)].getCode())
                     .setMethod(PayMethodEnum.values()[new Random().nextInt(PayMethodEnum.values().length)].getCode())
-                    .setExpiredTime(LocalDateTime.now().plus(Duration.ofHours(1)))
                     .setReqTime(LocalDateTime.now())
                     .setRefundableBalance(BigDecimal.valueOf(0));
             order.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
-            order.setCreateTime(TradeNoGenerateUtil.generateRandomTime(currentTime.toLocalDate()));;
+            order.setCreateTime(TradeNoGenerateUtil.generateRandomTime(currentTime.toLocalDate()));
+            order.setExpiredTime(order.getCreateTime().plus(Duration.ofHours(1)));
+            order.setReqTime(order.getCreateTime());
             order.setVersion(3);
-            list.add(order);
+            //判断是否已经开店
+            if(StoreEnum.values()[bizIndex].getDate().isBefore(currentTime.toLocalDate())) {
+                list.add(order);
+            }
+
             count ++;
             if(list.size() > 100) {
                 payOrderManager.saveBatch(list, list.size());
                 list.clear();
             }
-            if(count > 1500) {
+            //生意高峰期的月份
+            if(count > getTranceCount(currentTime.toLocalDate())) { //1000 ,1800
                 currentTime = currentTime.plusDays(1);
                 count = 0;
             }
+            total ++;
             //三天提现一次
-            if(total % 4500 == 0) {
-                final LocalDateTime createTime = currentTime;
+            if(total % 3800 == 0) {
+                final LocalDateTime createTime = TradeNoGenerateUtil.getWorkday(currentTime);
+                if (createTime == null)  continue;
                 Arrays.stream(StoreEnum.values()).forEach(a -> {
                     PayOrder payOrder = new PayOrder();
                     payOrder.setBizOrderNo(TradeNoGenerateUtil.refund())
@@ -128,13 +137,16 @@ public class PayAssistService {
                             .setReqTime(LocalDateTime.now())
                             .setRefundableBalance(BigDecimal.valueOf(0));
                     payOrder.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
-                    payOrder.setCreateTime(TradeNoGenerateUtil.generateRandomTime(createTime.toLocalDate()));;
+                    payOrder.setCreateTime(createTime);;
                     payOrder.setVersion(3);
-                    payOrderManager.save(payOrder);
+                    //判断是否已经开店
+                    if(a.getDate().plusDays(5).isBefore(createTime.toLocalDate())) {
+                        payOrderManager.save(payOrder);
+                    }
                 });
 
             }
-            total ++;
+
         }
     }
 
@@ -255,4 +267,13 @@ public class PayAssistService {
             throw new ValidationFailedException("支付超时时间设置有误, 请检查!");
         }
     }
+
+    private int getTranceCount(LocalDate currentDate)  {
+        if(Arrays.asList(5,6,7,8,9,10).contains(currentDate.getMonthValue())) {
+            return  2400;
+        } else {
+            return 1220;
+        }
+    }
+
 }

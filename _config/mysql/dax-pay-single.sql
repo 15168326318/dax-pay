@@ -1219,6 +1219,7 @@ CREATE TABLE `pay_order`  (
                               PRIMARY KEY (`id`) USING BTREE,
                               INDEX `order_biz_order_order_no_idx`(`biz_order_no` ASC) USING BTREE,
                               INDEX `order_pay_order_order_no_idx`(`order_no` ASC) USING BTREE,
+                              INDEX `pay_order_createtime_idx`(create_time,biz_name) USING BTREE,
                               INDEX `order_pay_order_out_order_no_idx`(`out_order_no` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '支付订单' ROW_FORMAT = DYNAMIC;
 

@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.daxpay.service.param.order.pay.PayOrderQueryExt;
 import org.dromara.daxpay.service.param.report.TradeReportQuery;
 import org.dromara.daxpay.service.result.report.TradeReportResult;
 import org.springframework.stereotype.Repository;
@@ -103,11 +104,12 @@ public class PayOrderManager extends BaseManager<PayOrderMapper, PayOrder> {
     /**
      * 查询汇总金额
      */
-    public List<PayOrder> statistics(PayOrderQuery query){
+    public List<PayOrder> statistics(PayOrderQueryExt query){
         QueryWrapper<PayOrderQuery> param = new QueryWrapper<>();
 
         param.eq(StringUtils.isNotEmpty(query.getBizCode()),"biz_Code", query.getBizCode())
-                .groupBy("biz_Name");
+                .between(query.getStart() != null,"create_time",query.getStart(),query.getEnd())
+                .groupBy("biz_Name","DATE_FORMAT(create_time, '%Y-%m')").orderByAsc("biz_Name");
         return baseMapper.statistics(param);
     }
 

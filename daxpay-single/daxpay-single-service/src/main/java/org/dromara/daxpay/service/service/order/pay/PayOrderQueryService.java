@@ -15,6 +15,7 @@ import org.dromara.daxpay.service.convert.order.pay.PayOrderConvert;
 import org.dromara.daxpay.service.dao.order.pay.PayOrderManager;
 import org.dromara.daxpay.service.entity.order.pay.PayOrder;
 import org.dromara.daxpay.service.param.order.pay.PayOrderQuery;
+import org.dromara.daxpay.service.param.order.pay.PayOrderQueryExt;
 import org.dromara.daxpay.service.param.report.TradeReportQuery;
 import org.dromara.daxpay.service.result.order.pay.PayOrderVo;
 import cn.hutool.core.util.StrUtil;
@@ -51,7 +52,7 @@ public class PayOrderQueryService {
     /**
      * 统计
      */
-    public List<PayOrder> statistics(PayOrderQuery payOrder) {
+    public List<PayOrder> statistics(PayOrderQueryExt payOrder) {
 
         return payOrderManager.statistics(payOrder);
     }

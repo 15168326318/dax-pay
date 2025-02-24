@@ -25,7 +25,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -71,7 +73,7 @@ public class PayOrderController {
     @RequestPath("统计")
     @Operation(summary = "统计")
     @GetMapping("/statistics")
-    public Result<List<PayOrderStatis>> statistics(PayOrderQuery param){
+    public Result<Map<String,Object>> statistics(PayOrderQueryExt param){
 
         List<PayOrder> list = queryService.statistics(param);
         List<PayOrderStatis> result =  list.stream().map(a -> {
@@ -93,15 +95,17 @@ public class PayOrderController {
             BigDecimal refundableBalance = result.stream()
                     .map(PayOrderStatis::getRefundableBalance)
                     .reduce(BigDecimal.valueOf(0.0), BigDecimal::add); // 初始值为 0.0，累加逻辑为 Double::sum
-            BigDecimal method = result.stream()
-                    .map(a -> new BigDecimal(a.getMethod()))
-                    .reduce(BigDecimal.valueOf(0.0), BigDecimal::add); // 初始值为 0.0，累加逻辑为 Double::sum
-            payOrderStatis.setMethod(method+"");
+            payOrderStatis.setMethod("--");
             payOrderStatis.setAmount(totalAmount);
             payOrderStatis.setRefundableBalance(refundableBalance);
             result.add(payOrderStatis);
         }
-        return Res.ok(result);
+        Map<String,Object> map = new HashMap<>();
+        map.put("records", result);
+        map.put("total", 1);
+        map.put("size", 15);
+        map.put("current", 1);
+        return Res.ok(map);
     }
 
     @RequestPath("查询订单详情")
@@ -131,7 +135,18 @@ public class PayOrderController {
         if(ext.getEnd() != null) {
             param.setCreateTime(new PayOrderQuery.Between(ext.getStart(), ext.getEnd()));
         }
-        return Res.ok(queryService.getTotalAmount(param));
+        if("cashout".equals(param.getStatus())) {
+            BigDecimal amount = queryService.getTotalAmount(param);
+            param.setStatus("success");
+            BigDecimal totalAmount = queryService.getTotalAmount(param);
+            if(totalAmount == null || amount ==null) {
+                return Res.ok(new BigDecimal(0));
+            } else {
+                return Res.ok(totalAmount.subtract(amount));
+            }
+        } else {
+            return Res.ok(queryService.getTotalAmount(param));
+        }
     }
 
     @RequestPath("同步支付订单状态")

@@ -32,10 +32,9 @@ public interface PayOrderMapper extends MPJBaseMapper<PayOrder> {
      * 支付通道
      */
     @Select("""
-         select * ,t.amount - t.refundableBalance as method from (
-          SELECT biz_name , SUM(CASE WHEN status = 'success' THEN amount ELSE 0 END) amount
-              ,SUM(CASE WHEN status = 'cashout' THEN amount ELSE 0 END) refundableBalance FROM pay_order   ${ew.customSqlSegment}
-            ) t
+          SELECT biz_name , DATE_FORMAT(create_time, '%Y-%m') AS method, SUM(CASE WHEN status = 'success' THEN amount ELSE 0 END) amount
+              ,count(CASE WHEN status = 'success' THEN 1 ELSE null END) refundableBalance FROM pay_order   ${ew.customSqlSegment}
+            
     """)
     List<PayOrder> statistics(@Param(Constants.WRAPPER) QueryWrapper<PayOrderQuery> param);
 }
