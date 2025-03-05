@@ -112,6 +112,17 @@ public class PayOrderManager extends BaseManager<PayOrderMapper, PayOrder> {
                 .groupBy("biz_Name","DATE_FORMAT(create_time, '%Y-%m')").orderByAsc("biz_Name");
         return baseMapper.statistics(param);
     }
+    /**
+     * 交易金额曲线图
+     */
+    public List<PayOrder> moneyStatistics(PayOrderQueryExt query){
+        QueryWrapper<PayOrderQuery> param = new QueryWrapper<>();
+
+        param.eq(StringUtils.isNotEmpty(query.getBizCode()),"biz_Code", query.getBizCode())
+                .between(query.getStart() != null,"create_time",query.getStart(),query.getEnd())
+                .groupBy("DATE_FORMAT(create_time, '%Y-%m-%d')");//.orderByAsc("biz_Name");
+        return baseMapper.moneyStatistics(param);
+    }
 
     /**
      * 查询当前超时的未支付订单

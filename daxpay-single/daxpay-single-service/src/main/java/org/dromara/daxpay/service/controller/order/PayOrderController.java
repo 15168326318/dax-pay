@@ -7,6 +7,9 @@ import cn.bootx.platform.core.rest.Res;
 import cn.bootx.platform.core.rest.param.PageParam;
 import cn.bootx.platform.core.rest.result.PageResult;
 import cn.bootx.platform.core.rest.result.Result;
+import org.apache.commons.lang3.StringUtils;
+import org.dromara.daxpay.core.enums.PayStatusEnum;
+import org.dromara.daxpay.core.enums.StoreEnum;
 import org.dromara.daxpay.service.entity.order.pay.PayOrder;
 import org.dromara.daxpay.service.entity.order.pay.PayOrderStatis;
 import org.dromara.daxpay.service.param.order.pay.PayOrderQuery;
@@ -25,6 +28,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +55,13 @@ public class PayOrderController {
     @Operation(summary = "新增订单")
     @PostMapping("/add")
     public Result<String> add(@RequestBody PayOrderQueryExt param){
-        payAssistService.createPayOrders(param.getStart(),param.getEnd());
+        if(StringUtils.isNotEmpty(param.getBizCode())) {
+            payAssistService.createPayOrders(param.getStart(), param.getEnd(), StoreEnum.getByCode(param.getBizCode()));
+        } else {
+            Arrays.stream(StoreEnum.values()).forEach(a -> {
+                payAssistService.createPayOrders(param.getStart(), param.getEnd(), a);
+            });
+        }
         return Res.ok();
     }
     @RequestPath("分页查询")
@@ -68,6 +79,13 @@ public class PayOrderController {
         } else {
             return Res.ok(queryService.page(pageParam, param));
         }
+    }
+
+    @RequestPath("首页曲线图，当前月和上一个月的比较")
+    @Operation(summary = "首页曲线图，当前月和上一个月的比较")
+    @GetMapping("/moneyDayStatistics")
+    public Result<List<PayOrderQueryService.Moneys>> moneyStatistics(PayOrderQueryExt param) {
+      return  Res.ok(queryService.moneyStatistics());
     }
 
     @RequestPath("统计")
@@ -128,23 +146,31 @@ public class PayOrderController {
         return Res.ok(order);
     }
 
-    @RequestPath("查询金额汇总")
+    @RequestPath("查询金额汇总 ")
     @Operation(summary = "查询金额汇总")
     @GetMapping("/getTotalAmount")
     public Result<BigDecimal> getTotalAmount(PayOrderQuery param, PayOrderQueryExt ext){
         if(ext.getEnd() != null) {
             param.setCreateTime(new PayOrderQuery.Between(ext.getStart(), ext.getEnd()));
         }
-        if("cashout".equals(param.getStatus())) {
+        //可提现金额
+        if(PayStatusEnum.CASHOUT.getCode().equals(param.getStatus())) {
+            //提现不需要按时间
+            param.setCreateTime(null);
             BigDecimal amount = queryService.getTotalAmount(param);
-            param.setStatus("success");
+            param.setStatus(PayStatusEnum.SUCCESS.getCode());
             BigDecimal totalAmount = queryService.getTotalAmount(param);
             if(totalAmount == null || amount ==null) {
                 return Res.ok(new BigDecimal(0));
             } else {
                 return Res.ok(totalAmount.subtract(amount));
             }
-        } else {
+        } if(PayStatusEnum.WITHDRAWN.getCode().equals(param.getStatus())) {//已经提现
+            //已经提现
+            param.setStatus(PayStatusEnum.CASHOUT.getCode());
+            return Res.ok(queryService.getTotalAmount(param));
+        }  else {
+            //交易总额
             return Res.ok(queryService.getTotalAmount(param));
         }
     }

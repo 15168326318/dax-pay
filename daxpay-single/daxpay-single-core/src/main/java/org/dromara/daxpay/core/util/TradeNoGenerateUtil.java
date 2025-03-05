@@ -8,6 +8,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -178,14 +179,14 @@ public class TradeNoGenerateUtil {
         if (timeSlot < 30) { // 30% 的概率选择早上8:30-9:30
             hour = 8;
             minute = 30 + random.nextInt(60);
-        } else if (timeSlot < 60) { // 30% 的概率选择中午11:30-13:00
+        } else if (timeSlot < 65) { // 30% 的概率选择中午11:30-13:00
             hour = 11;
             minute = 30 + random.nextInt(90);
-        } else if (timeSlot < 80) { // 20%  的概率选择下午14:30-15:30
+        } else if (timeSlot < 90) { // 20%  的概率选择下午14:30-15:30
             hour = 14;
             minute = 30 + random.nextInt(60);
         } else { // 20% 其它时间段
-            List<Integer> hours = Arrays.asList(7,10,11,14,15,16,17,18,19,20,21);
+            List<Integer> hours = Arrays.asList(10,11,14,15,16,17,18,19,20);
             minute = random.nextInt(59);
             hour = hours.get(random.nextInt(hours.size()));
 
@@ -203,8 +204,32 @@ public class TradeNoGenerateUtil {
         return LocalTime.of(hour, minute, second);
     }
 
+//
+//    //// 生成18000到25000之间的随机数 ,用于提现金额
+//    public static int generateRandomMoney() {
+//        Random random = new Random();
+//
+//        // 生成18000到25000之间的随机数
+//        int randomNumber = random.nextInt(25800 - 18000 + 1) + 19200;
+//
+//        // 将随机数调整为整百或整千的数
+//        int roundedNumber;
+//        if (random.nextBoolean()) {
+//            // 调整为整百的数
+//            roundedNumber = (randomNumber / 100) * 100;
+//        } else {
+//            // 调整为整千的数
+//            roundedNumber = (randomNumber / 1000) * 1000;
+//        }
+//
+//       return roundedNumber;
+//    }
 
-    //// 生成18000到25000之间的随机数 ,用于提现金额
+
+    /**
+     * 获取可提现金额并提现，如果大于两8万则提现，并体现后不能少于8万
+     * @return
+     */
     public static int generateRandomMoney() {
         Random random = new Random();
 
@@ -221,7 +246,7 @@ public class TradeNoGenerateUtil {
             roundedNumber = (randomNumber / 1000) * 1000;
         }
 
-       return roundedNumber;
+        return roundedNumber;
     }
 
 
@@ -248,4 +273,38 @@ public class TradeNoGenerateUtil {
         // 排除假期
         return !holidays.contains(date);
     }
-}
+
+
+    /**
+     *  获取该月的第一天
+     * @param curretDay
+     */
+        public static LocalDateTime getFirstDayOfMonth(LocalDate curretDay) {
+
+            // 获取该月的第一天
+            LocalDate firstDayOfMonth = curretDay.with(TemporalAdjusters.firstDayOfMonth());
+
+            // 获取该月的最小时间（第一天的 00:00:00.000）
+            LocalDateTime startOfMonth = firstDayOfMonth.atStartOfDay();
+
+            return  startOfMonth;
+        }
+
+    /**
+     *  获取该月的最后一天
+     * @param curretDay
+     */
+    public static LocalDateTime getLastDayOfMonth(LocalDate curretDay) {
+
+
+        // 获取该月的最后一天
+        LocalDate lastDayOfMonth = curretDay.with(TemporalAdjusters.lastDayOfMonth());
+
+        // 获取该月的最大时间（最后一天的 23:59:59.999）
+        LocalDateTime endOfMonth = lastDayOfMonth.atTime(LocalTime.MAX);
+
+
+        return  endOfMonth;
+    }
+
+    }

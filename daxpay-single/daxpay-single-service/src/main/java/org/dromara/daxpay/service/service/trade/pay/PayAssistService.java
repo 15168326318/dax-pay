@@ -1,6 +1,7 @@
 package org.dromara.daxpay.service.service.trade.pay;
 
 import cn.bootx.platform.core.exception.ValidationFailedException;
+import cn.bootx.platform.core.rest.Res;
 import cn.bootx.platform.core.util.BigDecimalUtil;
 import cn.bootx.platform.core.util.DateTimeUtil;
 import cn.bootx.platform.starter.redis.delay.service.DelayJobService;
@@ -17,11 +18,16 @@ import org.dromara.daxpay.core.util.PayUtil;
 import org.dromara.daxpay.core.util.TradeNoGenerateUtil;
 import org.dromara.daxpay.service.bo.trade.PayResultBo;
 import org.dromara.daxpay.service.code.DaxPayCode;
+import org.dromara.daxpay.service.common.AppConfig;
 import org.dromara.daxpay.service.common.context.MchAppLocal;
 import org.dromara.daxpay.service.common.local.PaymentContextLocal;
 import org.dromara.daxpay.service.dao.order.pay.PayOrderManager;
 import org.dromara.daxpay.service.entity.order.pay.PayOrder;
+import org.dromara.daxpay.service.param.order.pay.PayOrderQuery;
 import org.dromara.daxpay.service.service.order.pay.PayOrderQueryService;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +45,20 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PayAssistService {
+public class PayAssistService implements InitializingBean {
 
     private static  int total = 1;
 
     private final PayOrderManager payOrderManager;
     private final PayOrderQueryService payOrderQueryService;
+    private final PayOrderQueryService queryService;
     private final PaySyncService paySyncService;
     private final DelayJobService delayJobService;
 
+    @Autowired
+    private AppConfig appConfig;
+    private  Map<String,String> mapmin = new HashMap<>();
+    private  Map<String,String> mapmax = new HashMap<>();
     /**
      * 创建支付订单并保存, 返回支付订单
      */
@@ -73,19 +84,21 @@ public class PayAssistService {
         return order;
     }
 
-    public void createPayOrders(LocalDateTime startTime,LocalDateTime endTime) {
+    @Async
+    public void createPayOrders(LocalDateTime startTime,LocalDateTime endTime,StoreEnum storeEnum) {
         LocalDateTime currentTime =  startTime;
         List<PayOrder> list = new ArrayList<>();
 
+        //每天订单数
         int count =0;
         while (currentTime.isBefore(endTime)) {
             PayOrder order = new PayOrder();
             int quantity = new Random().nextInt(3) + 1;
             int  index = new Random().nextInt(productEnum.values().length);
-            int  bizIndex = new Random().nextInt(StoreEnum.values().length);
+//            int  bizIndex = new Random().nextInt(StoreEnum.values().length);
             order.setBizOrderNo(TradeNoGenerateUtil.store())
-                    .setBizName(StoreEnum.values()[bizIndex].getName())
-                    .setBizCode(StoreEnum.values()[bizIndex].getCode())
+                    .setBizName(storeEnum.getName())
+                    .setBizCode(storeEnum.getCode())
                     .setQuantity(quantity + "")//数量
                     .setTitle(productEnum.values()[index].getName())//产品
                     .setAmount(BigDecimal.valueOf(productEnum.values()[index].getPrivt().doubleValue() * quantity))//金额
@@ -100,9 +113,10 @@ public class PayAssistService {
             order.setCreateTime(TradeNoGenerateUtil.generateRandomTime(currentTime.toLocalDate()));
             order.setExpiredTime(order.getCreateTime().plus(Duration.ofHours(1)));
             order.setReqTime(order.getCreateTime());
+            order.setLastModifiedTime(order.getCreateTime());
             order.setVersion(3);
             //判断是否已经开店
-            if(StoreEnum.values()[bizIndex].getDate().isBefore(currentTime.toLocalDate())) {
+            if(storeEnum.getDate().isBefore(currentTime.toLocalDate())) {
                 list.add(order);
             }
 
@@ -112,22 +126,21 @@ public class PayAssistService {
                 list.clear();
             }
             //生意高峰期的月份
-            if(count > getTranceCount(currentTime.toLocalDate())) { //1000 ,1800
+            if(count > getTranceCount(currentTime.toLocalDate(),storeEnum.getCode(),mapmin,mapmax)) { //1000 ,1800
                 currentTime = currentTime.plusDays(1);
                 count = 0;
-            }
-            total ++;
-            //三天提现一次
-            if(total % 3800 == 0) {
+                //提现
                 final LocalDateTime createTime = TradeNoGenerateUtil.getWorkday(currentTime);
-                if (createTime == null)  continue;
-                Arrays.stream(StoreEnum.values()).forEach(a -> {
+                if (createTime == null) continue;
+                BigDecimal tjmoney = this.getTjMoney(new PayOrderQuery(storeEnum.getCode()));
+                //可提现金额必须大于13万才提现, 并要留9万
+                if (tjmoney.doubleValue() > 130000) {
                     PayOrder payOrder = new PayOrder();
                     payOrder.setBizOrderNo(TradeNoGenerateUtil.refund())
-                            .setBizName(a.getName())
-                            .setBizCode(a.getCode())
+                            .setBizName(storeEnum.getName())
+                            .setBizCode(storeEnum.getCode())
                             .setTitle(productEnum.values()[index].getName())//产品
-                            .setAmount(new BigDecimal(TradeNoGenerateUtil.generateRandomMoney()))//提现金额
+                            .setAmount(tjmoney.subtract(new BigDecimal(90000)))//提现金额
                             .setOrderNo(TradeNoGenerateUtil.refund())
                             .setStatus(PayStatusEnum.CASHOUT.getCode())
                             .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
@@ -137,16 +150,108 @@ public class PayAssistService {
                             .setReqTime(LocalDateTime.now())
                             .setRefundableBalance(BigDecimal.valueOf(0));
                     payOrder.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
-                    payOrder.setCreateTime(createTime);;
+                    payOrder.setCreateTime(createTime);
+                    order.setLastModifiedTime(order.getCreateTime());
                     payOrder.setVersion(3);
                     //判断是否已经开店
-                    if(a.getDate().plusDays(5).isBefore(createTime.toLocalDate())) {
+                    if (storeEnum.getDate().plusDays(5).isBefore(createTime.toLocalDate())) {
                         payOrderManager.save(payOrder);
                     }
-                });
-
+                }
             }
+            total ++;
+        }
+    }
+//
+//    public void createPayOrders(LocalDateTime startTime,LocalDateTime endTime) {
+//        LocalDateTime currentTime =  startTime;
+//        List<PayOrder> list = new ArrayList<>();
+//
+//        //每天订单数
+//        int count =0;
+//        while (currentTime.isBefore(endTime)) {
+//            PayOrder order = new PayOrder();
+//            int quantity = new Random().nextInt(3) + 1;
+//            int  index = new Random().nextInt(productEnum.values().length);
+//            int  bizIndex = new Random().nextInt(StoreEnum.values().length);
+//            order.setBizOrderNo(TradeNoGenerateUtil.store())
+//                    .setBizName(StoreEnum.values()[bizIndex].getName())
+//                    .setBizCode(StoreEnum.values()[bizIndex].getCode())
+//                    .setQuantity(quantity + "")//数量
+//                    .setTitle(productEnum.values()[index].getName())//产品
+//                    .setAmount(BigDecimal.valueOf(productEnum.values()[index].getPrivt().doubleValue() * quantity))//金额
+//                    .setOrderNo(TradeNoGenerateUtil.pay())
+//                    .setStatus(PayStatusEnum.SUCCESS.getCode())
+//                    .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
+//                    .setChannel(ChannelEnum.values()[new Random().nextInt(ChannelEnum.values().length)].getCode())
+//                    .setMethod(PayMethodEnum.values()[new Random().nextInt(PayMethodEnum.values().length)].getCode())
+//                    .setReqTime(LocalDateTime.now())
+//                    .setRefundableBalance(BigDecimal.valueOf(0));
+//            order.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
+//            order.setCreateTime(TradeNoGenerateUtil.generateRandomTime(currentTime.toLocalDate()));
+//            order.setExpiredTime(order.getCreateTime().plus(Duration.ofHours(1)));
+//            order.setReqTime(order.getCreateTime());
+//            order.setVersion(3);
+//            //判断是否已经开店
+//            if(StoreEnum.values()[bizIndex].getDate().isBefore(currentTime.toLocalDate())) {
+//                list.add(order);
+//            }
+//
+//            count ++;
+//            if(list.size() > 100) {
+//                payOrderManager.saveBatch(list, list.size());
+//                list.clear();
+//            }
+//            //生意高峰期的月份
+//            if(count > getTranceCount(currentTime.toLocalDate())) { //1000 ,1800
+//                currentTime = currentTime.plusDays(1);
+//                count = 0;
+//                //提现
+//                final LocalDateTime createTime = TradeNoGenerateUtil.getWorkday(currentTime);
+//                if (createTime == null)  continue;
+//                Arrays.stream(StoreEnum.values()).forEach(a -> {
+//                    BigDecimal  tjmoney = this.getTjMoney(new PayOrderQuery(a.getCode()));
+//                    //大于8万才提现
+//                    if(tjmoney.doubleValue() > 80000) {
+//                        PayOrder payOrder = new PayOrder();
+//                        payOrder.setBizOrderNo(TradeNoGenerateUtil.refund())
+//                                .setBizName(a.getName())
+//                                .setBizCode(a.getCode())
+//                                .setTitle(productEnum.values()[index].getName())//产品
+//                                .setAmount(tjmoney.subtract(new BigDecimal(80000)))//提现金额
+//                                .setOrderNo(TradeNoGenerateUtil.refund())
+//                                .setStatus(PayStatusEnum.CASHOUT.getCode())
+//                                .setRefundStatus(PayRefundStatusEnum.NO_REFUND.getCode())
+//                                .setChannel(ChannelEnum.values()[new Random().nextInt(ChannelEnum.values().length)].getCode())
+//                                .setMethod(PayMethodEnum.values()[new Random().nextInt(PayMethodEnum.values().length)].getCode())
+//                                .setExpiredTime(LocalDateTime.now().plus(Duration.ofHours(1)))
+//                                .setReqTime(LocalDateTime.now())
+//                                .setRefundableBalance(BigDecimal.valueOf(0));
+//                        payOrder.setAllocStatus(PayAllocStatusEnum.IGNORE.getCode());
+//                        payOrder.setCreateTime(createTime);
+//                        payOrder.setVersion(3);
+//                        //判断是否已经开店
+//                        if (a.getDate().plusDays(5).isBefore(createTime.toLocalDate())) {
+//                            payOrderManager.save(payOrder);
+//                        }
+//                    }
+//                });
+//            }
+//            total ++;
+//        }
+//    }
 
+    private BigDecimal  getTjMoney(PayOrderQuery param) {
+            //提现不需要按时间
+        param.setCreateTime(null);
+        param.setStatus(PayStatusEnum.CASHOUT.getCode());
+        BigDecimal amount = queryService.getTotalAmount(param);
+        param.setStatus(PayStatusEnum.SUCCESS.getCode());
+        BigDecimal totalAmount = queryService.getTotalAmount(param);
+        if(totalAmount == null || amount ==null) {
+            return new BigDecimal(0);
+        } else {
+            return totalAmount.subtract(amount);
         }
     }
 
@@ -268,12 +373,27 @@ public class PayAssistService {
         }
     }
 
+    private int getTranceCount(LocalDate currentDate,String code,Map<String,String> min ,Map<String,String> max)  {
+        if(Arrays.asList(3,4,5,6,7,8,9,10,11).contains(currentDate.getMonthValue())) {
+            return Integer.parseInt(max.get(code));
+        } else {
+            return  Integer.parseInt(min.get(code));
+        }
+    }
     private int getTranceCount(LocalDate currentDate)  {
-        if(Arrays.asList(5,6,7,8,9,10).contains(currentDate.getMonthValue())) {
+        if(Arrays.asList(3,4,5,6,7,8,9,10,11).contains(currentDate.getMonthValue())) {
             return  2400;
         } else {
             return 1220;
         }
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        appConfig.getServers().forEach(a -> {
+            String[] mm = a.split("@");
+            mapmin.put(mm[0],mm[1]);
+            mapmax.put(mm[0],mm[2]);
+        });
+    }
 }

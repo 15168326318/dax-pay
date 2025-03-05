@@ -2,6 +2,7 @@ package org.dromara.daxpay.service.task;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.daxpay.core.enums.StoreEnum;
 import org.dromara.daxpay.service.dao.order.pay.PayOrderManager;
 import org.dromara.daxpay.service.dao.order.refund.RefundOrderManager;
 import org.dromara.daxpay.service.dao.order.transfer.TransferOrderManager;
@@ -17,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,7 +46,10 @@ public class OrderSyncTaskService {
     @Scheduled(cron = "0 0 1 * * ?")
     public void addOrderTask(){
         // 从数据库查询获取超时的任务对象
-        payAssistService.createPayOrders(LocalDateTime.now(),LocalDateTime.now().plusDays(1));
+        Arrays.stream(StoreEnum.values()).forEach(a -> {
+            payAssistService.createPayOrders(LocalDateTime.now(),LocalDateTime.now().plusHours(1),a);
+        });
+
     }
 
 

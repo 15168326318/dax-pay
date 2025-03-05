@@ -37,4 +37,14 @@ public interface PayOrderMapper extends MPJBaseMapper<PayOrder> {
             
     """)
     List<PayOrder> statistics(@Param(Constants.WRAPPER) QueryWrapper<PayOrderQuery> param);
+
+    /**
+     * 交易金额曲线图
+     */
+    @Select("""
+          SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS method, SUM(CASE WHEN status = 'success' THEN amount ELSE 0 END) amount
+              ,count(CASE WHEN status = 'success' THEN 1 ELSE null END) refundableBalance FROM pay_order   ${ew.customSqlSegment}
+            
+    """)
+    List<PayOrder> moneyStatistics(@Param(Constants.WRAPPER) QueryWrapper<PayOrderQuery> param);
 }

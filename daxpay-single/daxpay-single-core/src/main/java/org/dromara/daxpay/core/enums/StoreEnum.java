@@ -1,10 +1,13 @@
 package org.dromara.daxpay.core.enums;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * 商店
@@ -25,6 +28,21 @@ public enum StoreEnum {
 
     final String code;
     final String name;
+    /**
+     * 开店时间
+     */
     final LocalDate date;
+
+    public static StoreEnum getByCode(String code) {
+        if (StrUtil.isEmpty(code)) {
+            return null;
+        }
+        for (StoreEnum type : values()) {
+            if (type.getCode().equals(code)) {
+                return type;
+            }
+        }
+        return null;
+    }
 
 }

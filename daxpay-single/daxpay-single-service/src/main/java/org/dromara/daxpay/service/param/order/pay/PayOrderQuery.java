@@ -132,4 +132,7 @@ public class PayOrderQuery extends MchAppQuery  {
         }
     }
 
+    public PayOrderQuery(String bizCode) {
+        this.bizCode = bizCode;
+    }
 }
